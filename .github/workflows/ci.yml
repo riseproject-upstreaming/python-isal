@@ -228,7 +228,9 @@ jobs:
           path: dist/*.tar.gz
 
   build_wheels:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    # Temporarily build wheels on pull requests too. test-arch is skipped
+    # on pull requests, so tolerate skipped dependencies.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ${{ matrix.os }}
     needs:
       - lint
