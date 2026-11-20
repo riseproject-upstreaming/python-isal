@@ -228,7 +228,9 @@ jobs:
           path: dist/*.tar.gz
 
   build_wheels:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    # Temporarily build wheels on pull requests too. test-arch is skipped
+    # on pull requests, so tolerate skipped dependencies.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ${{ matrix.os }}
     needs:
       - lint
@@ -259,6 +261,9 @@ jobs:
           - os: "ubuntu-latest"
             cibw_archs_linux: "aarch64"
             cibw_before_all_linux: "true"  # The true command exits with 0
+          - os: "ubuntu-latest"
+            cibw_archs_linux: "riscv64"
+            cibw_before_all_linux: "true"  # The true command exits with 0
     steps:
       - uses: actions/checkout@v4
         with:
@@ -278,10 +283,10 @@ jobs:
         uses: ilammy/setup-nasm@v1
         if: runner.os == 'Windows'
       - name: Set up QEMU
-        if: ${{runner.os == 'Linux' && matrix.cibw_archs_linux == 'aarch64'}}
+        if: ${{runner.os == 'Linux' && (matrix.cibw_archs_linux == 'aarch64' || matrix.cibw_archs_linux == 'riscv64')}}
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: arm64
+          platforms: arm64,riscv64
       - name: Build wheels
         run: cibuildwheel --output-dir dist
         env:
